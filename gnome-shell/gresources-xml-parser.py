@@ -31,11 +31,10 @@ if __name__ == '__main__':
     gsource_xml = ET.ElementTree(file=args.gresource_source.name)
     source_files = [f.text for f in gsource_xml.findall('.//gresource/file')]
 
-    filtered = []
-    for f in source_files:
-        if [fl for fl in args.filter if fnmatch.fnmatch(f, fl)]:
-            continue
-
-        filtered.append(os.path.join(args.path, f))
+    filtered = [
+        os.path.join(args.path, f)
+        for f in source_files
+        if not [fl for fl in args.filter if fnmatch.fnmatch(f, fl)]
+    ]
 
     print('\n'.join(filtered))

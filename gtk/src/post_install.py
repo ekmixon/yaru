@@ -22,14 +22,14 @@ for f in flavours:
     flavour_dir = path.join(themes_dir, flavour_name)
 
     # rename index.theme
-    theme_index_name = flavour_name + "-index.theme"
+    theme_index_name = f"{flavour_name}-index.theme"
     theme_index_src = path.join(flavour_dir, theme_index_name)
     if path.exists(theme_index_src):
         theme_index_dst = path.join(flavour_dir, 'index.theme')
         move(theme_index_src, theme_index_dst)
 
     for gtkver in ['3.0', '3.20', '4.0']:
-        gtk_dir = path.join(flavour_dir, 'gtk-' + gtkver)
+        gtk_dir = path.join(flavour_dir, f'gtk-{gtkver}')
 
         # rename gresource
         theme_gresource = "{flavour}-gtk-{ver}.gresource".format(flavour=flavour_name, ver=gtkver)

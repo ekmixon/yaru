@@ -243,14 +243,12 @@ def cropalign(size, filename):
             f"{filename} is too big to be cleanly cropped to {size} ({hcropped}x{vcropped} at best)"
         )
         warn(
-            "cropping to {}x{}!".format(
-                content_dimensions[2] - content_dimensions[0],
-                content_dimensions[3] - content_dimensions[1],
-            )
+            f"cropping to {content_dimensions[2] - content_dimensions[0]}x{content_dimensions[3] - content_dimensions[1]}!"
         )
 
+
     if options.testing:
-        img.save(filename + ".orig.png", "png")
+        img.save(f"{filename}.orig.png", "png")
 
     debug(
         f"{filename} content is {content_dimensions[0]} {content_dimensions[1]} {content_dimensions[2]} {content_dimensions[3]}"
@@ -266,7 +264,7 @@ def cropalign(size, filename):
     )
     pixels = cropimg.load()
     if options.testing:
-        cropimg.save(filename + ".crop.png", "png")
+        cropimg.save(f"{filename}.crop.png", "png")
     if options.align_corner:
         expimg = cropimg.crop((0, 0, size, size))
         result = (content_dimensions[0], content_dimensions[1])
@@ -300,8 +298,8 @@ def cropalign_hotspot(new_base, size, filename):
 
 def negative(img):
     pixels = img.load()
-    for y in range(0, img.size[1]):
-        for x in range(0, img.size[0]):
+    for y in range(img.size[1]):
+        for x in range(img.size[0]):
             r, g, b, a = pixels[x, y]
             pixels[x, y] = (255 - r, 255 - g, 255 - b, a)
 
@@ -373,12 +371,7 @@ class SVGRect:
 
 
 def get_next_size(index, current_size):
-    if index % 2 == 0:
-        # 24->32, 48->64, 96->128, 192->256
-        return (current_size * 4) / 3
-    else:
-        # 32->48, 64->96, 128->192, 256->384
-        return (current_size * 3) / 2
+    return (current_size * 4) / 3 if index % 2 == 0 else (current_size * 3) / 2
 
 
 def get_csize(index, current_size):
@@ -396,15 +389,13 @@ def postprocess_slice(slicename, skipped):
         subdir = f"bitmaps/{size}x{size}"
         relslice = f"{subdir}/{pngsliceFName}"
         csize = get_csize(i, size)
-        if relslice not in skipped:
-            if options.hotspots:
-                hotrelslice = f"{subdir}/{hotsliceFName}"
+        if relslice not in skipped and options.hotspots:
+            hotrelslice = f"{subdir}/{hotsliceFName}"
         for scale in SCALE_PAIRS:
             subdir = f"bitmaps/{size}x{size}_{scale[1]}"
             relslice = f"{subdir}/{pngsliceFName}"
-            if relslice not in skipped:
-                if options.hotspots:
-                    hotrelslice = f"{subdir}/{hotsliceFName}"
+            if relslice not in skipped and options.hotspots:
+                hotrelslice = f"{subdir}/{hotsliceFName}"
 
 
 def write_xcur(slicename):
@@ -421,22 +412,17 @@ def write_xcur(slicename):
 
     # This relies on the fact that frame 1 is the first frame of an animation in the rect list
     # If that is not so, the *icongen input file will end up missing some of the lines
-    if framenum == -1 or framenum == 1:
-        mode = "wb"
-    else:
-        mode = "ab"
+    mode = "wb" if framenum in {-1, 1} else "ab"
     if framenum == -1:
         fps_field = ""
-    else:
-        if options.anicur:
+    elif options.anicur:
             # For anicursorgen use jiffies
-            fps_field = " {}".format(int(60.0 / options.fps))
-        else:
+        fps_field = f" {int(60.0 / options.fps)}"
+    else:
             # For xcursorgen use milliseconds
-            fps_field = " {}".format(int(1000.0 / options.fps))
+        fps_field = f" {int(1000.0 / options.fps)}"
 
-    xcur = {}
-    xcur["s0"] = open(f"bitmaps/{slicename}.in", mode)
+    xcur = {"s0": open(f"bitmaps/{slicename}.in", mode)}
     if len(SCALE_PAIRS) > 0:
         xcur["s1"] = open(f"bitmaps/{slicename}.s1.in", mode)
         xcur["s2"] = open(f"bitmaps/{slicename}.s2.in", mode)
@@ -500,7 +486,7 @@ def sort_xcur(slicename, passed):
 def delete_hotspot(slicename):
     hotsliceFName = f"{slicename}.hotspot.png"
 
-    for i, size in enumerate(SIZES):
+    for size in SIZES:
         subdir = f"bitmaps/{size}x{size}"
         hotrelslice = f"{subdir}/{hotsliceFName}"
         if os.path.exists(hotrelslice):
@@ -530,12 +516,15 @@ class SVGHandler(handler.ContentHandler):
         if self.isFloat(val):
             return float(val)
 
-        res = None
         supported_units = "px, pt, cm, mm, in, %"
-        for unit in supported_units.split(", "):
-            if val.endswith(unit):
-                res = float(val.rstrip(unit))
-                break
+        res = next(
+            (
+                float(val.rstrip(unit))
+                for unit in supported_units.split(", ")
+                if val.endswith(unit)
+            ),
+            None,
+        )
 
         if not res:
             fatal(
@@ -578,9 +567,10 @@ class SVGLayerHandler(SVGHandler):
         Checks to see if we're starting to parse a slices layer, and sets the appropriate flags.  Otherwise, the layer will simply be ignored."""
         id = attrs["id"]
         debug(f'found layer: name="{name}" id="{id}"')
-        if attrs.get("inkscape:groupmode", None) == "layer":
-            if self.inSlicesLayer() or attrs["inkscape:label"] == "slices":
-                self.layer_nests += 1
+        if attrs.get("inkscape:groupmode", None) == "layer" and (
+            self.inSlicesLayer() or attrs["inkscape:label"] == "slices"
+        ):
+            self.layer_nests += 1
 
     def endElement_layer(self, name):
         """Callback for leaving a layer in the SVG file
@@ -669,7 +659,7 @@ class SVGFilter(saxutils.XMLFilterBase):
             styles = style.split(";")
             new_styles = []
             if old_style is not None:
-                match_to = old_style + ":"
+                match_to = f"{old_style}:"
             for s in styles:
                 if len(s) > 0 and (old_style is None or not s.startswith(match_to)):
                     new_styles.append(s)
@@ -698,7 +688,7 @@ class SVGFilter(saxutils.XMLFilterBase):
         if MODE_SHADOWS in self.mode and is_shadows:
             # Only remove the shadows
             is_throwaway_layer = True
-        elif MODE_HOTSPOTS in self.mode and not (is_hotspots or is_slices):
+        elif MODE_HOTSPOTS in self.mode and not is_hotspots and not is_slices:
             # Remove all layers but hotspots and slices
             if localname == "g":
                 is_throwaway_layer = True
@@ -759,7 +749,7 @@ def filter_svg(input, output, mode):
     """
 
     mode_objs = [[m] for m in mode]
-    if len(mode_objs) == 0:
+    if not mode_objs:
         raise ValueError()
 
     output_gen = saxutils.XMLGenerator(output)
@@ -836,11 +826,10 @@ def stderr_reader(inkscape, inkscape_stderr):
     """Read from a file descriptor
     Used to read from inkscape process stderr"""
     while True:
-        line = inkscape_stderr.readline()
-        if line:
+        if line := inkscape_stderr.readline():
             line = line.rstrip("\n").rstrip("\r")
             print(f"inkscape STDERR> {line}")
-            fatal(f"inkscape failed to render a slice. Aborting now")
+            fatal("inkscape failed to render a slice. Aborting now")
         else:
             raise UnexpectedEndOfStream
 
@@ -848,7 +837,7 @@ def stderr_reader(inkscape, inkscape_stderr):
 def spawn_inkscape(number_of_renderers, filename):
     """ Spawn multiple instances of inkscape as for image rendering """
     info(f"spawning {number_of_renderers} inkscape instances")
-    for i in range(number_of_renderers):
+    for _ in range(number_of_renderers):
         proc = subprocess.Popen(
             ["inkscape", "--shell", filename],
             stdin=subprocess.PIPE,

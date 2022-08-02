@@ -29,7 +29,7 @@ def main():
     gh_tracked_lp_bugs = get_gh_bugs()
 
     for id in lp_bugs:
-        tag = "LP#%s" % id
+        tag = f"LP#{id}"
         if tag not in gh_tracked_lp_bugs:
             create_issue(id, lp_bugs[id]["title"], lp_bugs[id]["link"])
 
@@ -53,7 +53,7 @@ def get_yaru_launchpad_bugs():
     for task in bug_tasks:
         id = str(task.bug.id)
         title = task.title.split(": ")[1]
-        link = "https://bugs.launchpad.net/ubuntu/+source/yaru-theme/+bug/" + str(id)
+        link = f"https://bugs.launchpad.net/ubuntu/+source/yaru-theme/+bug/{id}"
         bugs[id] = {"title": title, "link": link}
 
     return bugs
@@ -87,9 +87,9 @@ def create_issue(id, title, weblink):
             "issue",
             "create",
             "--message",
-            "LP#{} {}".format(id, title),
+            f"LP#{id} {title}",
             "--message",
-            "Reported first on Launchpad at {}".format(weblink),
+            f"Reported first on Launchpad at {weblink}",
             "-l",
             "Launchpad",
         ]

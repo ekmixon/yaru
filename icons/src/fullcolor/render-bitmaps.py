@@ -77,7 +77,7 @@ def main(args, SRC):
         ret = subprocess.run(cmd, capture_output=True)
         if ret.returncode != 0:
             print("execution of")
-            print('  %s' % "".join(cmd))
+            print(f'  {"".join(cmd)}')
             print("returned with error %d" % ret.returncode)
             print(5*"=", "stdout", 5*"=")
             print(ret.stdout.decode())
@@ -86,6 +86,8 @@ def main(args, SRC):
             return
 
         optimize_png(output_file)
+
+
 
     class ContentHandler(xml.sax.ContentHandler):
         ROOT = 0
@@ -169,7 +171,10 @@ def main(args, SRC):
                 assert self.icon_name
                 assert self.context
 
-                if self.filter is not None and not self.icon_name in self.filter:
+                if (
+                    self.filter is not None
+                    and self.icon_name not in self.filter
+                ):
                     return
 
                 print(self.context, self.icon_name)
@@ -180,12 +185,12 @@ def main(args, SRC):
                         id = rect["id"]
                         dpi = 96 * dpi_factor
 
-                        size_str = "%sx%s" % (width, height)
+                        size_str = f"{width}x{height}"
                         if dpi_factor != 1:
-                            size_str += "@%sx" % dpi_factor
+                            size_str += f"@{dpi_factor}x"
 
                         dir = os.path.join(MAINDIR, size_str, self.context)
-                        outfile = os.path.join(dir, self.icon_name + ".png")
+                        outfile = os.path.join(dir, f"{self.icon_name}.png")
                         if not os.path.exists(dir):
                             os.makedirs(dir)
                         # Do a time based check!
@@ -207,6 +212,7 @@ def main(args, SRC):
         def characters(self, chars):
             self.chars += chars.strip()
 
+
     if not args.svg:
         print("Rendering all SVGs in", SRC)
         if not os.path.exists(MAINDIR):
@@ -219,7 +225,7 @@ def main(args, SRC):
                 xml.sax.parse(open(file), handler)
         print("")
     else:
-        svg = args.svg + ".svg"
+        svg = f"{args.svg}.svg"
         file = os.path.join(SRC, svg)
 
         if os.path.exists(file):
@@ -230,8 +236,6 @@ def main(args, SRC):
             print(
                 'Could not find SVG "%s" in %s, looking into the next one' % (svg, SRC)
             )
-            # icon not in this directory, try the next one
-            pass
 
 
 parser = argparse.ArgumentParser(description="Render icons from SVG to PNG")

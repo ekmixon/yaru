@@ -44,9 +44,10 @@ def main():
         "-V",
         "--version",
         action="version",
-        version="{}-{}".format(program_name, program_version),
+        version=f"{program_name}-{program_version}",
         help="Display the version number and exit.",
     )
+
     parser.add_argument(
         "-h", "-?", action="help", help="Display the usage message and exit."
     )
@@ -142,7 +143,7 @@ def main():
             int(args.color[8:10], 16),
         )
     except:
-        print("Can't parse the color '{}'".format(args.color), file=sys.stderr)
+        print(f"Can't parse the color '{args.color}'", file=sys.stderr)
         parser.print_help()
         return 1
 
@@ -171,16 +172,11 @@ def main():
 def make_cursor_from(inp, out, args):
     frames = parse_config_from(inp, args.prefix)
 
-    animated = frames_have_animation(frames)
-
-    if animated:
-        result = make_ani(frames, out, args)
-    else:
-        buf = make_cur(frames, args)
-        copy_to(out, buf)
-        result = 0
-
-    return result
+    if animated := frames_have_animation(frames):
+        return make_ani(frames, out, args)
+    buf = make_cur(frames, args)
+    copy_to(out, buf)
+    return 0
 
 
 def copy_to(out, buf):
@@ -367,10 +363,7 @@ def make_ani(frames, out, args):
         )
     )
 
-    rates = set()
-    for frameset in framesets:
-        rates.add(frameset[0][4])
-
+    rates = {frameset[0][4] for frameset in framesets}
     if len(rates) != 1:
         buf.write(b"rate")
         buf.write(p("<I", len(framesets) * 4))
@@ -389,9 +382,7 @@ def make_ani(frames, out, args):
         cur = make_cur(frameset, args, animated=True)
         cur_size = cur.seek(0, io.SEEK_END)
         aligned_cur_size = cur_size
-        # if cur_size % 4 != 0:
-        #  aligned_cur_size += 4 - cur_size % 2
-        buf.write(p("<i", cur_size))
+        buf.write(p("<i", aligned_cur_size))
         copy_to(buf, cur)
         pos = buf.seek(0, io.SEEK_END)
         if pos % 2 != 0:
@@ -453,7 +444,7 @@ def parse_config_from(inp, prefix):
             hoty = int(words[2]) - 1
             filename = words[3]
             if not os.path.isabs(filename):
-                filename = prefix + "/" + filename
+                filename = f"{prefix}/{filename}"
         except:
             continue
 
